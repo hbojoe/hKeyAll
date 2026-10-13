@@ -1,5 +1,12 @@
 # Timers count online play time only. Progress is saved when players leave
 # and when the server disables the plugin.
+command:
+  # Additional command labels registered by the plugin.
+  # The main command /hkeyall is always available.
+  aliases:
+    - keyall
+    - hka
+
 timer:
   minimum-seconds: 3600
   maximum-seconds: 3600

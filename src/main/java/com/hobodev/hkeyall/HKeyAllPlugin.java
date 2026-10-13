@@ -13,7 +13,9 @@ import java.util.logging.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
+import org.bukkit.command.CommandMap;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.PluginIdentifiableCommand;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -28,6 +30,7 @@ import org.bukkit.scheduler.BukkitTask;
 
 public final class HKeyAllPlugin extends JavaPlugin implements Listener, TabExecutor {
     private final Map<UUID, PlayerTimer> timers = new HashMap<>();
+    private final Map<String, Command> aliasCommands = new HashMap<>();
     private final List<Reward> rewards = new ArrayList<>();
 
     private File dataFile;
@@ -52,6 +55,7 @@ public final class HKeyAllPlugin extends JavaPlugin implements Listener, TabExec
             getCommand("hkeyall").setExecutor(this);
             getCommand("hkeyall").setTabCompleter(this);
         }
+        registerConfiguredAliases();
 
         long nowMillis = System.currentTimeMillis();
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -64,6 +68,7 @@ public final class HKeyAllPlugin extends JavaPlugin implements Listener, TabExec
         if (timerTask != null) {
             timerTask.cancel();
         }
+        unregisterConfiguredAliases();
         tickOnlinePlayers();
         saveData();
     }
@@ -98,6 +103,7 @@ public final class HKeyAllPlugin extends JavaPlugin implements Listener, TabExec
             reloadConfig();
             loadData();
             reloadSettings();
+            registerConfiguredAliases();
             send(sender, message("reload"));
             return true;
         }
@@ -175,6 +181,56 @@ public final class HKeyAllPlugin extends JavaPlugin implements Listener, TabExec
             timerTask.cancel();
         }
         timerTask = Bukkit.getScheduler().runTaskTimer(this, this::tickOnlinePlayers, checkIntervalTicks, checkIntervalTicks);
+    }
+
+    private void registerConfiguredAliases() {
+        unregisterConfiguredAliases();
+
+        CommandMap commandMap = Bukkit.getCommandMap();
+        for (String alias : getConfig().getStringList("command.aliases")) {
+            String label = normalizeAlias(alias);
+            if (label == null || label.equals("hkeyall")) {
+                continue;
+            }
+
+            Command existingCommand = commandMap.getCommand(label);
+            if (existingCommand != null) {
+                getLogger().warning("Command alias '" + label + "' is already registered; skipping it.");
+                continue;
+            }
+
+            Command aliasCommand = new ConfiguredAliasCommand(label);
+            if (commandMap.register(getName().toLowerCase(Locale.ROOT), aliasCommand)) {
+                aliasCommands.put(label, aliasCommand);
+            } else {
+                aliasCommand.unregister(commandMap);
+                getLogger().warning("Could not register command alias '" + label + "'.");
+            }
+        }
+    }
+
+    private void unregisterConfiguredAliases() {
+        CommandMap commandMap = Bukkit.getCommandMap();
+        for (Command command : aliasCommands.values()) {
+            command.unregister(commandMap);
+        }
+        aliasCommands.clear();
+    }
+
+    private String normalizeAlias(String alias) {
+        if (alias == null) {
+            return null;
+        }
+
+        String label = alias.trim().toLowerCase(Locale.ROOT);
+        if (label.startsWith("/")) {
+            label = label.substring(1);
+        }
+        if (label.isEmpty() || !label.matches("[a-z0-9:_-]+")) {
+            getLogger().warning("Ignoring invalid command alias '" + alias + "'.");
+            return null;
+        }
+        return label;
     }
 
     private void tickOnlinePlayers() {
@@ -303,5 +359,28 @@ public final class HKeyAllPlugin extends JavaPlugin implements Listener, TabExec
             return String.format(Locale.ROOT, "%dm %ds", minutes, seconds);
         }
         return seconds + "s";
+    }
+
+    private final class ConfiguredAliasCommand extends Command implements PluginIdentifiableCommand {
+        private ConfiguredAliasCommand(String name) {
+            super(name);
+            setDescription("hKeyAll command alias.");
+            setUsage("/" + name + " <reload|time>");
+        }
+
+        @Override
+        public boolean execute(CommandSender sender, String label, String[] args) {
+            return HKeyAllPlugin.this.onCommand(sender, this, label, args);
+        }
+
+        @Override
+        public List<String> tabComplete(CommandSender sender, String alias, String[] args) {
+            return HKeyAllPlugin.this.onTabComplete(sender, this, alias, args);
+        }
+
+        @Override
+        public JavaPlugin getPlugin() {
+            return HKeyAllPlugin.this;
+        }
     }
 }

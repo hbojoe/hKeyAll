@@ -6,9 +6,8 @@ group = "com.hobodev"
 version = "1.0.0"
 
 java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 dependencies {
@@ -17,7 +16,7 @@ dependencies {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = "UTF-8"
-    options.release = 21
+    options.release = 17
 }
 
 processResources {
