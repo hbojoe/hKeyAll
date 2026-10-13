@@ -1,0 +1,27 @@
+# Timers count online play time only. Progress is saved when players leave
+# and when the server disables the plugin.
+timer:
+  minimum-seconds: 3600
+  maximum-seconds: 3600
+  check-interval-seconds: 5
+
+# If true, one reward is selected randomly each time a player earns a key.
+# If false, every enabled reward below is run each time.
+random-reward: true
+
+permissions:
+  time-command: "hkeyall.time"
+  reload-command: "hkeyall.admin"
+
+rewards:
+  - name: vote
+    enabled: true
+    command: "crate key give %player% vote 1"
+
+messages:
+  prefix: "&8[&6hKeyAll&8]&r "
+  reward: "&aYou received a &e%reward% &akey."
+  reload: "&aConfiguration reloaded."
+  no-permission: "&cYou do not have permission."
+  player-only: "&cOnly players can use that command."
+  time-left: "&aNext key in &e%time%&a."

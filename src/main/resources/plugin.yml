@@ -1,0 +1,18 @@
+name: hKeyAll
+version: ${version}
+main: com.hobodev.hkeyall.HKeyAllPlugin
+api-version: "1.20"
+author: HoboDev
+description: Per-player timed key rewards with configurable random intervals.
+commands:
+  hkeyall:
+    description: hKeyAll admin and player commands.
+    usage: /hkeyall <reload|time>
+    aliases: [hka]
+permissions:
+  hkeyall.admin:
+    description: Allows reloading hKeyAll configuration.
+    default: op
+  hkeyall.time:
+    description: Allows checking your next key timer.
+    default: op
